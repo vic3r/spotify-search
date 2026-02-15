@@ -36,6 +36,8 @@ cargo run
 |--------|----------|-------------|
 | GET | `/health` | Health check |
 | GET | `/api/v1/search` | Search Spotify for tracks |
+| GET | `/api/v1/search?include_features=true` | Search with audio features + embeddings |
+| GET | `/api/v1/tracks/with-features` | Get tracks by IDs with embeddings (called by Go saga) |
 
 ### Search
 
@@ -47,6 +49,13 @@ curl "http://localhost:8081/api/v1/search?q=blinding+lights&limit=10"
 - `q` (required): Search query (artist, track, album, etc.)
 - `limit` (optional): 1–50, default 20
 - `offset` (optional): Pagination offset, 0–1000
+- `include_features` (optional): If true, adds `embedding` (12-dim from Spotify audio features) and `metadata` per track
+
+### Tracks with features (for Go saga)
+
+```bash
+curl "http://localhost:8081/api/v1/tracks/with-features?ids=0VjIjW4GlUZAMYd2vXMi3b,5QO79kh1waicV47BqGRL3g"
+```
 
 **Example response:**
 ```json
@@ -76,6 +85,7 @@ curl "http://localhost:8081/api/v1/search?q=blinding+lights&limit=10"
 | `SPOTIFY_CLIENT_ID` | Yes | - | Spotify app Client ID |
 | `SPOTIFY_CLIENT_SECRET` | Yes | - | Spotify app Client Secret |
 | `PORT` | No | 8081 | HTTP port |
+| `GRPC_PORT` | No | 50051 | gRPC port (for Go service) |
 
 ## Authentication
 

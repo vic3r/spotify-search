@@ -1,5 +1,6 @@
 mod config;
 mod error;
+mod grpc;
 mod handlers;
 mod spotify;
 
@@ -9,6 +10,7 @@ use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::Config;
+use crate::grpc::SpotifySearchService;
 use crate::handlers::router;
 use crate::spotify::SpotifyClient;
 
@@ -22,20 +24,32 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let config = Config::from_env()?;
-    let spotify = SpotifyClient::new(config.spotify_client_id, config.spotify_client_secret);
+    let spotify = SpotifyClient::new(config.spotify_client_id.clone(), config.spotify_client_secret.clone());
+
+    let grpc_svc = SpotifySearchService::new(spotify.clone());
+    let grpc_router = grpc_svc.into_router();
 
     let app = router()
         .layer(TraceLayer::new_for_http())
         .with_state(spotify);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
-    tracing::info!("listening on {}", addr);
+    let http_addr = SocketAddr::from(([0, 0, 0, 0], config.port));
+    let grpc_addr = SocketAddr::from(([0, 0, 0, 0], config.grpc_port));
 
-    axum::serve(
-        tokio::net::TcpListener::bind(addr).await?,
-        app.into_make_service(),
-    )
-    .await?;
+    tracing::info!("HTTP listening on {}", http_addr);
+    tracing::info!("gRPC listening on {}", grpc_addr);
+
+    let grpc_server = tonic::transport::Server::builder()
+        .add_service(grpc_router)
+        .serve(grpc_addr);
+
+    tokio::select! {
+        r = axum::serve(
+            tokio::net::TcpListener::bind(http_addr).await?,
+            app.into_make_service(),
+        ) => r?,
+        r = grpc_server => r?,
+    }
 
     Ok(())
 }

@@ -4,6 +4,7 @@ use std::env;
 #[derive(Debug, Clone)]
 pub struct Config {
     pub port: u16,
+    pub grpc_port: u16,
     pub spotify_client_id: String,
     pub spotify_client_secret: String,
 }
@@ -15,6 +16,11 @@ impl Config {
             .and_then(|p| p.parse().ok())
             .unwrap_or(8081);
 
+        let grpc_port = env::var("GRPC_PORT")
+            .ok()
+            .and_then(|p| p.parse().ok())
+            .unwrap_or(50051);
+
         let spotify_client_id = env::var("SPOTIFY_CLIENT_ID")
             .map_err(|_| anyhow::anyhow!("SPOTIFY_CLIENT_ID is required"))?;
 
@@ -23,6 +29,7 @@ impl Config {
 
         Ok(Self {
             port,
+            grpc_port,
             spotify_client_id,
             spotify_client_secret,
         })
