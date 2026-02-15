@@ -1,5 +1,5 @@
 # Build stage. Build from monorepo root: docker build -f spotify-search/Dockerfile .
-FROM rust:1.83-bookworm AS builder
+FROM rust:1.85-bookworm AS builder
 WORKDIR /app
 
 COPY spotify-search/Cargo.toml spotify-search/build.rs ./
