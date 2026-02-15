@@ -2,8 +2,12 @@
 //!
 //! Uses Client Credentials flow for server-to-server authentication.
 
+use std::sync::Arc;
+
+use base64::Engine;
 use reqwest::Client;
 use serde::Deserialize;
+use tokio::sync::RwLock;
 
 const TOKEN_URL: &str = "https://accounts.spotify.com/api/token";
 const API_BASE: &str = "https://api.spotify.com/v1";
@@ -14,9 +18,10 @@ pub struct SpotifyClient {
     client: Client,
     client_id: String,
     client_secret: String,
-    token: tokio::sync::RwLock<Option<CachedToken>>,
+    token: Arc<RwLock<Option<CachedToken>>>,
 }
 
+#[derive(Clone)]
 struct CachedToken {
     access_token: String,
     expires_at: std::time::Instant,
@@ -28,7 +33,7 @@ impl SpotifyClient {
             client: Client::new(),
             client_id,
             client_secret,
-            token: tokio::sync::RwLock::new(None),
+            token: Arc::new(RwLock::new(None)),
         }
     }
 
